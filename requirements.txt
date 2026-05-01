@@ -1,2 +1,5 @@
 python-telegram-bot==21.5
 APScheduler==3.10.4
+aiohttp==3.9.5
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.25.1
