@@ -176,6 +176,7 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton(f"{toggle(s.notify_30min)} За 30 минут", callback_data="toggle_30")],
         [InlineKeyboardButton(f"{toggle(s.notify_5min)} За 5 минут", callback_data="toggle_5")],
+        [InlineKeyboardButton(f"{toggle(s.fonbet_check)} 🔴 Следить за Фонбетом", callback_data="toggle_fonbet")],
         [InlineKeyboardButton(
             f"⏱ Своё время: {s.notify_custom_min} мин" if s.notify_custom_min else "⏱ Добавить своё время",
             callback_data="set_custom"
@@ -208,6 +209,12 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         storage.save_settings(s)
         await _update_settings_message(query, s)
 
+    elif data == "toggle_fonbet":
+        s = storage.load_settings(chat_id)
+        s.fonbet_check = not s.fonbet_check
+        storage.save_settings(s)
+        await _update_settings_message(query, s)
+
     elif data == "toggle_5":
         s = storage.load_settings(chat_id)
         s.notify_5min = not s.notify_5min
@@ -236,6 +243,7 @@ async def _update_settings_message(query, s):
     keyboard = [
         [InlineKeyboardButton(f"{toggle(s.notify_30min)} За 30 минут", callback_data="toggle_30")],
         [InlineKeyboardButton(f"{toggle(s.notify_5min)} За 5 минут", callback_data="toggle_5")],
+        [InlineKeyboardButton(f"{toggle(s.fonbet_check)} 🔴 Следить за Фонбетом", callback_data="toggle_fonbet")],
         [InlineKeyboardButton(
             f"⏱ Своё время: {s.notify_custom_min} мин" if s.notify_custom_min else "⏱ Добавить своё время",
             callback_data="set_custom"
@@ -247,3 +255,38 @@ async def _update_settings_message(query, s):
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode='Markdown'
     )
+
+
+async def check_fonbet_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    predictions = storage.load_predictions(chat_id)
+
+    if not predictions:
+        await update.message.reply_text("📋 Список прогнозов пуст. Добавь через /add")
+        return
+
+    msg = await update.message.reply_text("🔄 Запрашиваю Фонбет...")
+
+    from fonbet_scraper import get_fonbet_events, find_match_on_fonbet
+    fonbet_events = await get_fonbet_events()
+
+    if not fonbet_events:
+        await msg.edit_text("❌ Не удалось получить данные с Фонбета. Проверь URL в fonbet_scraper.py")
+        return
+
+    s = storage.load_settings(chat_id)
+    lines = [f"🔍 Найдено событий на Фонбете: {len(fonbet_events)}\n"]
+
+    for pred in predictions:
+        found = find_match_on_fonbet(pred.team1, fonbet_events)
+        if found:
+            status = "🔴 LIVE" if found["is_live"] else "📋 Прематч"
+            lines.append(
+                f"✅ {status}\n"
+                f"Твой прогноз: {pred.team1[:60]}...\n"
+                f"На Фонбете: {found['team1']} — {found['team2']}\n"
+            )
+        else:
+            lines.append(f"❌ Не найден: {pred.team1[:60]}...\n")
+
+    await msg.edit_text('\n'.join(lines))

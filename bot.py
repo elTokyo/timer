@@ -2,6 +2,7 @@ import logging
 import os
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from handlers import (
+    check_fonbet_now,
     start, add_predictions, list_predictions, clear_predictions,
     settings, button_callback, delete_prediction, handle_text
 )
@@ -24,6 +25,7 @@ def main():
     app.add_handler(CommandHandler("clear", clear_predictions))
     app.add_handler(CommandHandler("settings", settings))
     app.add_handler(CommandHandler("delete", delete_prediction))
+    app.add_handler(CommandHandler("checkfonbet", check_fonbet_now))
     app.add_handler(CallbackQueryHandler(button_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
