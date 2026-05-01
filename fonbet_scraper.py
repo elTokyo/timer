@@ -6,8 +6,9 @@ logger = logging.getLogger(__name__)
 
 # Рабочий URL — lang=en чтобы названия команд были на латинице (лучше для матчинга)
 FONBET_API_URL = (
-    "https://line-lb61-w.bk6bba-resources.com/ma/events/listBase"
+    "https://line-lb54-w.bk6bba-resources.com/ma/events/listBase"
     "?lang=en&scopeMarket=1600"
+    
 )
 
 HEADERS = {
